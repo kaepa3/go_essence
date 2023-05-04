@@ -1,0 +1,11 @@
+goos: darwin
+goarch: amd64
+pkg: github.com/kaepa3/essence/ch8/base
+cpu: VirtualApple @ 2.50GHz
+BenchmarkMakeSomething-8   	   14346	     83217 ns/op	   72390 B/op	    1756 allocs/op
+BenchmarkMakeSomething-8   	   14402	     83597 ns/op	   72390 B/op	    1756 allocs/op
+BenchmarkMakeSomething-8   	   14388	     83971 ns/op	   72390 B/op	    1756 allocs/op
+BenchmarkMakeSomething-8   	   14200	     84885 ns/op	   72390 B/op	    1756 allocs/op
+BenchmarkMakeSomething-8   	   14302	     84250 ns/op	   72390 B/op	    1756 allocs/op
+PASS
+ok  	github.com/kaepa3/essence/ch8/base	10.494s
