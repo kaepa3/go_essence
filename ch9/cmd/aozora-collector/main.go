@@ -183,8 +183,8 @@ func setupDB(dsn string) (*sql.DB, error) {
 
 func addEntry(db *sql.DB, entry *Entry, content string) error {
 	_, err := db.Exec(`
-	REPLACE INTO authors(author_id, author) values(?,?)
-	`,
+        REPLACE INTO authors(author_id, author) values(?, ?)
+    `,
 		entry.AuthorID,
 		entry.Author,
 	)
@@ -193,8 +193,8 @@ func addEntry(db *sql.DB, entry *Entry, content string) error {
 	}
 
 	res, err := db.Exec(`
-	REPLACE INTO contents(author_id, title_id, title, content) values(?,?,?,?)
-	`,
+        REPLACE INTO contents(author_id, title_id, title, content) values(?, ?, ?, ?)
+    `,
 		entry.AuthorID,
 		entry.TitleID,
 		entry.Title,
@@ -210,18 +210,18 @@ func addEntry(db *sql.DB, entry *Entry, content string) error {
 
 	t, err := tokenizer.New(ipa.Dict(), tokenizer.OmitBosEos())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
 	seg := t.Wakati(content)
-	_, err = db.Exec(
-		`
-		INSERT INTO contents_fts(docid, words) values(?,?)
-		`,
+	_, err = db.Exec(`
+        REPLACE INTO contents_fts(docid, words) values(?, ?)
+    `,
 		docID,
-		strings.Join(seg, ""),
+		strings.Join(seg, " "),
 	)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	return nil
 }
