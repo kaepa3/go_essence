@@ -2,7 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"os"
+	"strings"
+
+	"github.com/ikawaha/kagome-dict/ipa"
+	"github.com/ikawaha/kagome/v2/tokenizer"
+	"golang.org/x/text/encoding/japanese"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -12,8 +21,8 @@ func main() {
 	}
 	defer db.Close()
 	queries := []string{
-		`CREATE TABLE IF NOT EXISTS authors(aushor_id TEXT, author TEXT, PRIMARY KEY (author_id))`,
-		`CREATE TABLE IF NOT EXISTS contents(aushor_id TEXT, title_id TEXT, title TEXT, content TEXT, PRIMARY KEY (author_id, title_id))`,
+		`CREATE TABLE IF NOT EXISTS authors(author_id TEXT, author TEXT, PRIMARY KEY (author_id))`,
+		`CREATE TABLE IF NOT EXISTS contents(author_id TEXT, title_id TEXT, title TEXT, content TEXT, PRIMARY KEY (author_id, title_id))`,
 		`CREATE VIRTUAL TABLE IF NOT EXISTS contents_fts USING fts4(words)`,
 	}
 	for _, query := range queries {
@@ -23,4 +32,77 @@ func main() {
 		}
 
 	}
+	addTempData(db)
+
+	//
+
+}
+
+func addTempData(db *sql.DB) (int64, string) {
+	//
+	b, err := os.ReadFile("./temp/ababababa.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	b, err = japanese.ShiftJIS.NewDecoder().Bytes(b)
+	if err != nil {
+		log.Fatal(err)
+	}
+	content := string(b)
+	res, err := db.Exec(`INSERT INTO contents(author_id, title_id, title, content) values(?,?,?,?)`,
+		"000879",
+		"14",
+		"あばばばば",
+		content,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	docID, err := res.LastInsertId()
+
+	t, err := tokenizer.New(ipa.Dict(), tokenizer.OmitBosEos())
+	if err != nil {
+		log.Fatal(err)
+	}
+	seg := t.Wakati(content)
+	_, err = db.Exec(
+		`
+		INSERT INTO contents_fts(docid, words) values(?,?)
+		`,
+		docID,
+		strings.Join(seg, ""),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	query := "虫 AND ココア"
+
+	rows, err := db.Query(`
+	SELECT
+		a.author,
+		c.title
+	From
+		contents c
+	INNER JOIN authors a
+		ON c.rowid = f.docid
+	INNER JOIN contents_fts f
+		ON c.rowid = f.docid
+		AND words MATCH ?
+	`, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		println("deruzo")
+		var author, title string
+		err = rows.Scan(&author, &title)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(author, title)
+	}
+
+	return docID, content
 }
